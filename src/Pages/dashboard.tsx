@@ -12,7 +12,7 @@ import {
   CardContent,
   CardMedia,
   Menu,
-  MenuItem
+  MenuItem,
 } from "@mui/material";
 import Sidebar from "../components/sideBar";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
@@ -44,7 +44,7 @@ const Dashboard: React.FC = () => {
   const [expandedPost, setExpandedPost] = useState<Set<string>>(new Set());
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(false); 
+  const [isEditing, setIsEditing] = useState(false);
 
   // Fetch posts
   const fetchPosts = async () => {
@@ -53,7 +53,7 @@ const Dashboard: React.FC = () => {
       setPosts(response.data.posts);
     } catch (error) {
       console.error("Error fetching posts:", error);
-    } 
+    }
   };
 
   useEffect(() => {
@@ -91,53 +91,53 @@ const Dashboard: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     if (!validateForm()) {
       return;
     }
-  
+
     try {
       const config = {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       };
-  
+
       const formData = new FormData();
       formData.append("title", title);
       formData.append("content", content);
-  
-      
+
       if (!isEditing) {
         files.forEach((file) => {
           formData.append("img", file);
         });
       }
-  
+
       if (isEditing) {
-        
         const response = await Axios.post(
           `/auth/editPosts/${selectedPostId}`,
           formData,
           config
         );
-  
+
         const updatedPost = {
           ...response.data.post,
           title,
           content,
           img: response.data.post.img,
         };
-  
+
         setPosts((prevPosts) =>
-          prevPosts.map((post) => (post._id === selectedPostId ? updatedPost : post))
+          prevPosts.map((post) =>
+            post._id === selectedPostId ? updatedPost : post
+          )
         );
       } else {
         // Send request for creating post
         const response = await Axios.post("/auth/createPost", formData, config);
         setPosts((prevPosts) => [...prevPosts, response.data.post]);
       }
-  
+
       // Reset form
       setTitle("");
       setContent("");
@@ -145,12 +145,11 @@ const Dashboard: React.FC = () => {
       setImageError("");
       setIsEditing(false);
       setSelectedPostId(null);
-      fetchPosts()
+      fetchPosts();
     } catch (error) {
       setError("Error creating/updating post. Please try again.");
     }
   };
-  
 
   const toggleExpand = (postId: string) => {
     setExpandedPost((prev) => {
@@ -164,11 +163,13 @@ const Dashboard: React.FC = () => {
     });
   };
 
-  const openMenu = (event: React.MouseEvent<HTMLButtonElement>, postId: string) => {
+  const openMenu = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    postId: string
+  ) => {
     setMenuAnchor(event.currentTarget);
     setSelectedPostId(postId);
     console.log(`postId${postId}`);
-    
   };
 
   const closeMenu = () => {
@@ -187,21 +188,23 @@ const Dashboard: React.FC = () => {
   const handleDelete = async () => {
     // SweetAlert2 confirmation box
     const result = await Swal.fire({
-      title: 'Are you sure?',
+      title: "Are you sure?",
       text: "You won't be able to revert this!",
-      icon: 'warning',
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!',
-      cancelButtonText: 'No, keep it'
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "No, keep it",
     });
 
     if (result.isConfirmed) {
       try {
         await Axios.delete(`/auth/deletePosts/${selectedPostId}`);
-        setPosts((prevPosts) => prevPosts.filter((post) => post._id !== selectedPostId));
-        Swal.fire('Deleted!', 'Your post has been deleted.', 'success');
+        setPosts((prevPosts) =>
+          prevPosts.filter((post) => post._id !== selectedPostId)
+        );
+        Swal.fire("Deleted!", "Your post has been deleted.", "success");
       } catch (error) {
-        Swal.fire('Error!', 'There was an error deleting the post.', 'error');
+        Swal.fire("Error!", "There was an error deleting the post.", "error");
       } finally {
         closeMenu();
       }
@@ -293,7 +296,9 @@ const Dashboard: React.FC = () => {
                   color="primary"
                   component="span"
                   onClick={() =>
-                    (document.getElementById("imageInput") as HTMLInputElement)?.click()
+                    (
+                      document.getElementById("imageInput") as HTMLInputElement
+                    )?.click()
                   }
                 >
                   <PhotoCameraIcon />
@@ -325,91 +330,99 @@ const Dashboard: React.FC = () => {
         {/* Post List */}
         <Box sx={{ marginTop: "20px", width: "100%" }}>
           <Grid container spacing={4} justifyContent="center">
-            {posts.map((post) => (
-              <Grid item key={post._id} xs={12} sm={6} md={4} lg={3}>
-                <Card
-                  sx={{
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    backgroundColor: "gray.900",
-                    color: "white",
-                    position: "relative",
-                  }}
-                >
-                  <CardMedia
-                    component="img"
-                    height="200"
-                    image={
-                      post.img && post.img.length > 0
-                        ? post.img[0]
-                        : "https://source.unsplash.com/random/300x300/?1"
-                    }
-                    alt={post.title}
-                  />
-                  <CardContent
+            {Array.isArray(posts) &&
+              posts.map((post) => (
+                <Grid item key={post._id} xs={12} sm={6} md={4} lg={3}>
+                  <Card
                     sx={{
-                      flexGrow: 1,
+                      width: "100%",
+                      height: "100%",
                       display: "flex",
                       flexDirection: "column",
-                      justifyContent: "space-between",
+                      backgroundColor: "gray.900",
+                      color: "white",
+                      position: "relative",
                     }}
                   >
-                    <Typography variant="h6" color="textPrimary" gutterBottom>
-                      {post.username}
-                    </Typography>
-                    {currentUserId === post.userId && (
-                      <>
-                        <IconButton
-                          onClick={(e) => openMenu(e, post._id)}
-                          sx={{
-                            position: "absolute",
-                            top: 8,
-                            right: 8,
-                            color: "primary.main"
-                          }}
-                        >
-                          <MoreVertIcon />
-                        </IconButton>
-                        <Menu
-                          anchorEl={menuAnchor}
-                          open={!!menuAnchor && selectedPostId === post._id}
-                          onClose={closeMenu}
-                        >
-                          <MenuItem onClick={() => handleEdit(post)}>Edit</MenuItem>
-                          <MenuItem onClick={handleDelete}>Delete</MenuItem>
-                        </Menu>
-                      </>
-                    )}
-                    <Typography
-                      variant="h5"
-                      fontWeight="bold"
-                      color="primary"
-                      gutterBottom
+                    <CardMedia
+                      component="img"
+                      height="200"
+                      image={
+                        post.img && post.img.length > 0
+                          ? post.img[0]
+                          : "https://source.unsplash.com/random/300x300/?1"
+                      }
+                      alt={post.title}
+                    />
+                    <CardContent
+                      sx={{
+                        flexGrow: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                      }}
                     >
-                      {post.title}
-                    </Typography>
-                    <Typography variant="body2" color="info">
-                      {expandedPost.has(post._id)
-                        ? post.content
-                        : post.content.length > MAX_CONTENT_LENGTH
-                        ? `${post.content.substring(0, MAX_CONTENT_LENGTH)}...`
-                        : post.content}
-                    </Typography>
-                    {post.content.length > MAX_CONTENT_LENGTH && (
-                      <Button
-                        onClick={() => toggleExpand(post._id)}
-                        size="small"
-                        sx={{ marginTop: "0.5rem", color: "primary.light" }}
+                      <Typography variant="h6" color="textPrimary" gutterBottom>
+                        {post.username}
+                      </Typography>
+                      {currentUserId === post.userId && (
+                        <>
+                          <IconButton
+                            onClick={(e) => openMenu(e, post._id)}
+                            sx={{
+                              position: "absolute",
+                              top: 8,
+                              right: 8,
+                              color: "primary.main",
+                            }}
+                          >
+                            <MoreVertIcon />
+                          </IconButton>
+                          <Menu
+                            anchorEl={menuAnchor}
+                            open={!!menuAnchor && selectedPostId === post._id}
+                            onClose={closeMenu}
+                          >
+                            <MenuItem onClick={() => handleEdit(post)}>
+                              Edit
+                            </MenuItem>
+                            <MenuItem onClick={handleDelete}>Delete</MenuItem>
+                          </Menu>
+                        </>
+                      )}
+                      <Typography
+                        variant="h5"
+                        fontWeight="bold"
+                        color="primary"
+                        gutterBottom
                       >
-                        {expandedPost.has(post._id) ? "Show Less" : "Read More"}
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
+                        {post.title}
+                      </Typography>
+                      <Typography variant="body2" color="info">
+                        {expandedPost.has(post._id)
+                          ? post.content
+                          : post.content.length > MAX_CONTENT_LENGTH
+                          ? `${post.content.substring(
+                              0,
+                              MAX_CONTENT_LENGTH
+                            )}...`
+                          : post.content}
+                      </Typography>
+                      {post.content.length > MAX_CONTENT_LENGTH && (
+                        <Button
+                          onClick={() => toggleExpand(post._id)}
+                          size="small"
+                          sx={{ marginTop: "0.5rem", color: "primary.light" }}
+                        >
+                          {expandedPost.has(post._id)
+                            ? "Show Less"
+                            : "Read More"}
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
           </Grid>
         </Box>
       </Box>
