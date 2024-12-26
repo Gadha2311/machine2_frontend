@@ -8,7 +8,6 @@ import {
   Grid,
   Paper,
   IconButton,
-  CircularProgress,
   Card,
   CardContent,
   CardMedia,
@@ -43,7 +42,6 @@ const Dashboard: React.FC = () => {
   const [imageError, setImageError] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [expandedPost, setExpandedPost] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState(true);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false); 
@@ -55,9 +53,7 @@ const Dashboard: React.FC = () => {
       setPosts(response.data.posts);
     } catch (error) {
       console.error("Error fetching posts:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    } 
   };
 
   useEffect(() => {
