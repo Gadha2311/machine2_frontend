@@ -5,7 +5,7 @@ const token = JSON.parse(
 )?.userTocken;
 
 const Axios: AxiosInstance = axios.create({
-  baseURL: "https://machine2-backend.onrender.com/api/",  //http://localhost:3000/api/
+  baseURL: "http://localhost:3000/api/",  //   https://machine2-backend.onrender.com/api/
   headers: {
     "Content-Type": "application/json",
     Authorization: token ? `Bearer ${token}` : "",
