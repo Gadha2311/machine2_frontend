@@ -14,21 +14,16 @@ import {
   Menu,
   MenuItem,
 } from "@mui/material";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
 import Sidebar from "../components/sideBar";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import SendIcon from "@mui/icons-material/Send";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import Swal from "sweetalert2";
-
-interface IPost {
-  _id: string;
-  userId: string;
-  username?: string;
-  title: string;
-  content: string;
-  img?: string[];
-  createdAt: string;
-}
+import { IPost } from "../interface/userInterface";
 
 const MAX_CONTENT_LENGTH = 100;
 
@@ -45,12 +40,17 @@ const Dashboard: React.FC = () => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [openModal, setOpenModal] = useState(false);
 
-  // Fetch posts
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [postsPerPage] = useState(8); 
+
   const fetchPosts = async () => {
     try {
-      const response = await Axios.get("/auth/posts");
+      const response = await Axios.get(`/auth/posts?page=${currentPage}&limit=${postsPerPage}`);
       setPosts(response.data.posts);
+      setTotalPages(response.data.totalPages); 
     } catch (error) {
       console.error("Error fetching posts:", error);
     }
@@ -58,9 +58,21 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchPosts();
-  }, []);
+  }, [currentPage]);
 
-  // Handle post submission
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+  
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
     if (selectedFiles) {
@@ -89,6 +101,35 @@ const Dashboard: React.FC = () => {
     return valid;
   };
 
+  const editPost = async (formData: FormData) => {
+    try {
+      const response = await Axios.post(
+        `/auth/editPosts/${selectedPostId}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      const updatedPost = {
+        ...response.data.post,
+        title,
+        content,
+        img: response.data.post.img,
+      };
+
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post._id === selectedPostId ? updatedPost : post
+        )
+      );
+    } catch (error) {
+      setError("Error updating post. Please try again.");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -96,59 +137,40 @@ const Dashboard: React.FC = () => {
       return;
     }
 
-    try {
-      const config = {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      };
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("content", content);
 
-      const formData = new FormData();
-      formData.append("title", title);
-      formData.append("content", content);
-
-      if (!isEditing) {
-        files.forEach((file) => {
-          formData.append("img", file);
-        });
-      }
-
-      if (isEditing) {
-        const response = await Axios.post(
-          `/auth/editPosts/${selectedPostId}`,
-          formData,
-          config
-        );
-
-        const updatedPost = {
-          ...response.data.post,
-          title,
-          content,
-          img: response.data.post.img,
-        };
-
-        setPosts((prevPosts) =>
-          prevPosts.map((post) =>
-            post._id === selectedPostId ? updatedPost : post
-          )
-        );
-      } else {
-        // Send request for creating post
-        const response = await Axios.post("/auth/createPost", formData, config);
-        setPosts((prevPosts) => [...prevPosts, response.data.post]);
-      }
-
-      // Reset form
-      setTitle("");
-      setContent("");
-      setFiles([]);
-      setImageError("");
-      setIsEditing(false);
-      setSelectedPostId(null);
-      fetchPosts();
-    } catch (error) {
-      setError("Error creating/updating post. Please try again.");
+    if (!isEditing) {
+      files.forEach((file) => {
+        formData.append("img", file);
+      });
     }
+
+    if (isEditing) {
+      await editPost(formData);
+    } else {
+      try {
+        const response = await Axios.post("/auth/createPost", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        setPosts((prevPosts) => [...prevPosts, response.data.post]);
+      } catch (error) {
+        setError("Error creating post. Please try again.");
+      }
+    }
+
+    // Reset form
+    setTitle("");
+    setContent("");
+    setFiles([]);
+    setImageError("");
+    setIsEditing(false);
+    setSelectedPostId(null);
+    setOpenModal(false);
+    fetchPosts();
   };
 
   const toggleExpand = (postId: string) => {
@@ -169,12 +191,12 @@ const Dashboard: React.FC = () => {
   ) => {
     setMenuAnchor(event.currentTarget);
     setSelectedPostId(postId);
-    console.log(`postId${postId}`);
+   
   };
 
   const closeMenu = () => {
     setMenuAnchor(null);
-    // setSelectedPostId(null);
+   
   };
 
   const handleEdit = (post: IPost) => {
@@ -182,11 +204,11 @@ const Dashboard: React.FC = () => {
     setContent(post.content);
     setFiles(post.img ? post.img.map((img) => new File([], img)) : []);
     setIsEditing(true);
+    setOpenModal(true);
     closeMenu();
   };
 
   const handleDelete = async () => {
-    // SweetAlert2 confirmation box
     const result = await Swal.fire({
       title: "Are you sure?",
       text: "You won't be able to revert this!",
@@ -227,7 +249,6 @@ const Dashboard: React.FC = () => {
           padding: "10px",
         }}
       >
-        {/* Create/Edit Post Form */}
         <Paper
           sx={{
             padding: "20px",
@@ -253,7 +274,7 @@ const Dashboard: React.FC = () => {
                   label="Title"
                   variant="outlined"
                   fullWidth
-                  value={title}
+                  value={!isEditing ? title : ""}
                   onChange={(e) => setTitle(e.target.value)}
                   required
                   error={!!titleError}
@@ -268,14 +289,13 @@ const Dashboard: React.FC = () => {
                   multiline
                   rows={4}
                   fullWidth
-                  value={content}
+                  value={!isEditing ? content : ""}
                   onChange={(e) => setContent(e.target.value)}
                   required
                   error={!!contentError}
                   helperText={contentError}
                 />
               </Grid>
-
               <Grid
                 item
                 xs={12}
@@ -387,7 +407,7 @@ const Dashboard: React.FC = () => {
                               Edit
                             </MenuItem>
                             <MenuItem onClick={handleDelete}>Delete</MenuItem>
-                          </Menu>
+                            </Menu>
                         </>
                       )}
                       <Typography
@@ -425,6 +445,75 @@ const Dashboard: React.FC = () => {
               ))}
           </Grid>
         </Box>
+        <Box sx={{ marginTop: "20px", display: "flex", justifyContent: "space-between", width: "100%" }}>
+          <Button onClick={handlePreviousPage} disabled={currentPage === 1}>
+            Previous
+          </Button>
+          <Typography>
+            Page {currentPage} of {totalPages}
+          </Typography>
+          <Button onClick={handleNextPage} disabled={currentPage === totalPages}>
+            Next
+          </Button>
+        </Box>
+        <Dialog open={openModal} onClose={() => setOpenModal(false)}>
+          <DialogTitle>
+            {isEditing ? "Edit Post" : "Create New Post"}
+          </DialogTitle>
+          <DialogContent>
+            <TextField
+              label="Title"
+              variant="outlined"
+              fullWidth
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              error={!!titleError}
+              helperText={titleError}
+            />
+            <TextField
+              label="Content"
+              variant="outlined"
+              multiline
+              rows={4}
+              fullWidth
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              required
+              error={!!contentError}
+              helperText={contentError}
+            />
+            <input
+              type="file"
+              hidden
+              onChange={handleImageChange}
+              accept="image/*"
+              id="imageInput"
+            />
+            <IconButton
+              color="primary"
+              component="span"
+              onClick={() =>
+                (
+                  document.getElementById("imageInput") as HTMLInputElement
+                )?.click()
+              }
+            ></IconButton>
+            {imageError && (
+              <Typography color="error" variant="body2">
+                {imageError}
+              </Typography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenModal(false)} color="primary">
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} color="primary">
+              {isEditing ? "Update Post" : "Create Post"}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Box>
   );

@@ -8,13 +8,10 @@ import LoginPage from "./Pages/login";
 import SignupPage from "./Pages/signup";
 import Dashboard from "./Pages/dashboard";
 import { Authprovider } from "./context/authcontext";
+import {AuthRouteProps} from "./interface/authInterface";
+import {ProtectedRouteProps} from "./interface/authInterface"
 
-interface AuthRouteProps {
-  children: React.ReactNode;
-}
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
+
 
 function App() {
   return (

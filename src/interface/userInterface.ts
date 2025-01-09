@@ -9,6 +9,17 @@ export interface signUpvalues {
     loading: boolean | null;
     registerUser: (values: signUpvalues) => Promise<void>;
   }
+
+
+  export interface IPost {
+    _id: string;
+    userId: string;
+    username?: string;
+    title: string;
+    content: string;
+    img?: string[];
+    createdAt: string;
+  }
   
   
    export interface loginValues {

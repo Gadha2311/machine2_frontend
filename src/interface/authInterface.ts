@@ -14,3 +14,11 @@ export interface AuthContextType {
     };
   }
   export interface AuthProviderProps {children:ReactNode}
+
+  export interface AuthRouteProps {
+    children: React.ReactNode;
+  }
+
+  export interface ProtectedRouteProps {
+    children: React.ReactNode;
+  }
