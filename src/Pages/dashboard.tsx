@@ -352,7 +352,7 @@ const Dashboard: React.FC = () => {
           <Grid container spacing={4} justifyContent="center">
             {Array.isArray(posts) &&
               posts.map((post) => (
-                <Grid item key={post._id} xs={12} sm={6} md={4} lg={3}>
+                <Grid item key={post._id} xs={12} sm={10} md={10} lg={7}>
                   <Card
                     sx={{
                       width: "100%",
@@ -366,7 +366,7 @@ const Dashboard: React.FC = () => {
                   >
                     <CardMedia
                       component="img"
-                      height="200"
+                      height="400"
                       image={
                         post.img && post.img.length > 0
                           ? post.img[0]
