@@ -33,11 +33,11 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated, onClose }) => {
 
   const validateForm = () => {
     let valid = true;
-    if (!title) {
+    if (!title.trim()) {
       setError("Title is required");
       valid = false;
     }
-    if (!content) {
+    if (!content.trim()) {
       setError("Content is required");
       valid = false;
     }
