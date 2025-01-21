@@ -6,7 +6,6 @@ import {
   Button,
   Typography,
   Grid,
-  Paper,
   IconButton,
   Card,
   CardContent,
@@ -19,8 +18,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Sidebar from "../components/sideBar";
-import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import SendIcon from "@mui/icons-material/Send";
+import CreatePost from "../components/createPost";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import Swal from "sweetalert2";
 import { IPost } from "../interface/userInterface";
@@ -41,16 +39,18 @@ const Dashboard: React.FC = () => {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [openModal, setOpenModal] = useState(false);
-
+  const [openCreatePost,setOpenCreatePost]=useState<boolean|null>(null)
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [postsPerPage] = useState(8); 
+  const [postsPerPage] = useState(8);
 
   const fetchPosts = async () => {
     try {
-      const response = await Axios.get(`/auth/posts?page=${currentPage}&limit=${postsPerPage}`);
+      const response = await Axios.get(
+        `/auth/posts?page=${currentPage}&limit=${postsPerPage}`
+      );
       setPosts(response.data.posts);
-      setTotalPages(response.data.totalPages); 
+      setTotalPages(response.data.totalPages);
     } catch (error) {
       console.error("Error fetching posts:", error);
     }
@@ -65,13 +65,12 @@ const Dashboard: React.FC = () => {
       setCurrentPage(currentPage + 1);
     }
   };
-  
+
   const handlePreviousPage = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
     }
   };
-
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
@@ -191,12 +190,10 @@ const Dashboard: React.FC = () => {
   ) => {
     setMenuAnchor(event.currentTarget);
     setSelectedPostId(postId);
-   
   };
 
   const closeMenu = () => {
     setMenuAnchor(null);
-   
   };
 
   const handleEdit = (post: IPost) => {
@@ -232,6 +229,14 @@ const Dashboard: React.FC = () => {
       }
     }
   };
+  const appearCreatePost = () => {
+    setOpenCreatePost(!openCreatePost);
+  };
+
+  const handlePostCreated = () => {
+    fetchPosts(); 
+    setOpenCreatePost(false); 
+  };
 
   const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
   const currentUserId = userData.user.id;
@@ -239,6 +244,7 @@ const Dashboard: React.FC = () => {
   return (
     <Box sx={{ display: "flex", height: "100vh", width: "100vw" }}>
       <Sidebar />
+      {error && <Typography color="error" variant="body2">{error} </Typography>}
       <Box
         sx={{
           flex: 1,
@@ -249,104 +255,16 @@ const Dashboard: React.FC = () => {
           padding: "10px",
         }}
       >
-        <Paper
-          sx={{
-            padding: "20px",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <Typography variant="h5" gutterBottom>
-            {isEditing ? "Edit Post" : "Create New Post"}
-          </Typography>
+        <Button variant="contained" color="primary" onClick={appearCreatePost}>
+          Create New Post
+        </Button>
 
-          {error && (
-            <Typography color="error" variant="body2">
-              {error}
-            </Typography>
-          )}
-
-          <form onSubmit={handleSubmit} style={{ width: "100%" }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  label="Title"
-                  variant="outlined"
-                  fullWidth
-                  value={!isEditing ? title : ""}
-                  onChange={(e) => setTitle(e.target.value)}
-                  required
-                  error={!!titleError}
-                  helperText={titleError}
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  label="Content"
-                  variant="outlined"
-                  multiline
-                  rows={4}
-                  fullWidth
-                  value={!isEditing ? content : ""}
-                  onChange={(e) => setContent(e.target.value)}
-                  required
-                  error={!!contentError}
-                  helperText={contentError}
-                />
-              </Grid>
-              <Grid
-                item
-                xs={12}
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <input
-                  type="file"
-                  hidden
-                  onChange={handleImageChange}
-                  accept="image/*"
-                  id="imageInput"
-                />
-                <IconButton
-                  color="primary"
-                  component="span"
-                  onClick={() =>
-                    (
-                      document.getElementById("imageInput") as HTMLInputElement
-                    )?.click()
-                  }
-                >
-                  <PhotoCameraIcon />
-                </IconButton>
-                {imageError && (
-                  <Typography color="error" variant="body2">
-                    {imageError}
-                  </Typography>
-                )}
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  sx={{
-                    padding: "10px",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                  startIcon={<SendIcon />}
-                >
-                  {isEditing ? "Update Post" : "Create Post"}
-                </Button>
-              </Grid>
-            </Grid>
-          </form>
-        </Paper>
-
+        {openCreatePost && (
+          <CreatePost
+            onPostCreated={handlePostCreated}
+            onClose={() => setOpenCreatePost(false)}
+          />
+        )}
         {/* Post List */}
         <Box sx={{ marginTop: "20px", width: "100%" }}>
           <Grid container spacing={4} justifyContent="center">
@@ -407,7 +325,7 @@ const Dashboard: React.FC = () => {
                               Edit
                             </MenuItem>
                             <MenuItem onClick={handleDelete}>Delete</MenuItem>
-                            </Menu>
+                          </Menu>
                         </>
                       )}
                       <Typography
@@ -445,14 +363,24 @@ const Dashboard: React.FC = () => {
               ))}
           </Grid>
         </Box>
-        <Box sx={{ marginTop: "20px", display: "flex", justifyContent: "space-between", width: "100%" }}>
+        <Box
+          sx={{
+            marginTop: "20px",
+            display: "flex",
+            justifyContent: "space-between",
+            width: "100%",
+          }}
+        >
           <Button onClick={handlePreviousPage} disabled={currentPage === 1}>
             Previous
           </Button>
           <Typography>
             Page {currentPage} of {totalPages}
           </Typography>
-          <Button onClick={handleNextPage} disabled={currentPage === totalPages}>
+          <Button
+            onClick={handleNextPage}
+            disabled={currentPage === totalPages}
+          >
             Next
           </Button>
         </Box>
